@@ -167,12 +167,12 @@ carbon_price = 2 # $/tCO2e
 
 # Load community's load and solar generation data
 # Load and solar flowing through customers' connection points
-household_total_imports = pd.read_csv('household_total_imports.csv')
-household_total_imports = household_total_imports.set_index('time')
-household_total_imports = household_total_imports.truncate(before=start_time.timestamp(), after=end_time.timestamp())
-household_total_exports = pd.read_csv('household_total_exports.csv')
-household_total_exports = household_total_exports.set_index('time')
-household_total_exports = household_total_exports.truncate(before=start_time.timestamp(), after=end_time.timestamp())
+net_import_no_battery_df = pd.read_csv('net_import_no_battery.csv')
+net_import_no_battery_df = net_import_no_battery_df.set_index('time')
+net_import_no_battery_df = net_import_no_battery_df.truncate(before=start_time.timestamp(), after=end_time.timestamp())
+net_export_no_battery_df = pd.read_csv('net_export_no_battery.csv')
+net_export_no_battery_df = net_export_no_battery_df.set_index('time')
+net_export_no_battery_df = net_export_no_battery_df.truncate(before=start_time.timestamp(), after=end_time.timestamp())
 # BTM solar generation and load
 total_load = pd.read_csv('total_load.csv')
 total_load = total_load.set_index('time')
@@ -183,7 +183,7 @@ total_solar_generation = total_solar_generation.set_index('time')
 total_solar_generation = total_solar_generation.truncate(before=start_time.timestamp(), after=end_time.timestamp())
 total_solar_generation = total_solar_generation['kW'].sum()/intervals_in_hour
 
-net_load_no_battery = household_total_imports + household_total_exports
+net_load_no_battery = net_import_no_battery_df + net_export_no_battery_df
 # # split load into import and export
 # net_import_no_battery = np.copy(net_load_no_battery['kW'].values)
 # net_export_no_battery = np.copy(net_load_no_battery['kW'].values)
@@ -193,8 +193,8 @@ net_load_no_battery = household_total_imports + household_total_exports
 #     else:
 #         net_import_no_battery[j] = 0
 
-net_import_no_battery = household_total_imports.kW
-net_export_no_battery = household_total_exports.kW
+net_import_no_battery = net_import_no_battery_df.kW
+net_export_no_battery = net_export_no_battery_df.kW
 
 peak_power_import_no_battery = max(net_import_no_battery)
 peak_power_export_no_battery = min(net_export_no_battery)
@@ -218,7 +218,8 @@ battery = EnergyStorage(max_capacity=battery_capacity_kWh*intervals_in_hour,
                         charging_power_limit=battery_p_charge_max*intervals_in_hour, 
                         discharging_power_limit=battery_p_discharge_max*intervals_in_hour, 
                         charging_efficiency=1, discharging_efficiency=1, 
-                        depth_of_discharge_limit=0.0, throughput_cost=throughput_cost)
+                        depth_of_discharge_limit=0.0, throughput_cost=throughput_cost,
+                        initial_state_of_charge=0)
 energy_system.add_energy_storage(battery)
 
 
@@ -266,6 +267,7 @@ ax1 = plt.subplot(gs[0])
 time_axis = np.arange(num_intervals)
 l2, = ax1.plot(time_axis,net_import_no_battery)
 l2, = ax1.plot(time_axis,net_export_no_battery)
+# l2, = ax1.plot(time_axis,carbon_price*carbon_intensity)
 # l2, = ax1.plot(time_axis,net_load_no_battery)
 plt.show()
 
