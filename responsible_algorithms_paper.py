@@ -240,7 +240,7 @@ base_network_charges = copy.deepcopy(spot_price)
 base_network_charges.values[:] = 0.1 # 10c/kWh
 
 tariffs = {}
-tariffs['re_import_tariff'] = spot_price
+tariffs['re_import_tariff'] = re_i_factor*spot_price
 tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
 tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
 tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
@@ -398,240 +398,241 @@ carbon_savings_communal = carbon_emissions_no_battery - carbon_emissions_communa
 
 
 
-# ##################### Optimise battery charge/discharging #####################
-# print('\n------ Optimise battery for carbon emissions ------')
-# # Change tariffs to artificial values to drive carbon emissions objective
-# re_i_factor = 1 # multiply base tariff values
-# re_e_factor = 1 # set export energy tariffs relative to re import
-# rt_i_factor = 0 # multiply base tariff values
-# rt_e_factor = 0 # set export transport tariffs relative to rt import
-# le_i_factor = 1 # set local import energy tariffs relative to re import
-# le_e_factor = 1 # set local export energy tariffs relative to le import
-# lt_i_factor = 0 # set local import transport tariffs relative to rt import
-# lt_e_factor = 0 # set local export transport tariffs relative to lt import
-# tariffs = {}
-# tariffs['re_import_tariff'] = carbon_price*carbon_intensity
-# tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
-# tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
-# tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
-# tariffs['le_import_tariff'] = le_i_factor*tariffs['re_import_tariff']
-# tariffs['le_export_tariff'] = le_e_factor*tariffs['le_import_tariff']
-# tariffs['lt_import_tariff'] = lt_i_factor*tariffs['rt_import_tariff']
-# tariffs['lt_export_tariff'] = lt_e_factor*tariffs['lt_import_tariff']
-# apply_tariffs(tariffs)
+##################### Optimise battery charge/discharging #####################
+print('\n------ Optimise battery for carbon emissions ------')
+# Change tariffs to artificial values to drive carbon emissions objective
+re_i_factor = 1 # multiply base tariff values
+re_e_factor = 1 # set export energy tariffs relative to re import
+rt_i_factor = 0 # multiply base tariff values
+rt_e_factor = 0 # set export transport tariffs relative to rt import
+le_i_factor = 1 # set local import energy tariffs relative to re import
+le_e_factor = 1 # set local export energy tariffs relative to le import
+lt_i_factor = 0 # set local import transport tariffs relative to rt import
+lt_e_factor = 0 # set local export transport tariffs relative to lt import
+tariffs = {}
+tariffs['re_import_tariff'] = re_i_factor*carbon_price*carbon_intensity
+tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
+tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
+tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
+tariffs['le_import_tariff'] = le_i_factor*tariffs['re_import_tariff']
+tariffs['le_export_tariff'] = le_e_factor*tariffs['le_import_tariff']
+tariffs['lt_import_tariff'] = lt_i_factor*tariffs['rt_import_tariff']
+tariffs['lt_export_tariff'] = lt_e_factor*tariffs['lt_import_tariff']
+apply_tariffs(tariffs)
 
-# opt_objective = OptimiserObjectiveSet.LocalModels
-# optimiser = LocalEnergyOptimiser(interval_in_minutes, num_intervals, energy_system, opt_objective)
+opt_objective = OptimiserObjectiveSet.LocalModels
+optimiser = LocalEnergyOptimiser(interval_in_minutes, num_intervals, energy_system, opt_objective)
 
-# optimised_battery_values ={ 'storage_charge_grid' : optimiser.values('storage_charge_grid'),
-#                             'storage_charge_generation' : optimiser.values('storage_charge_generation'),
-#                             'storage_discharge_demand' : optimiser.values('storage_discharge_demand'),
-#                             'storage_discharge_grid' : optimiser.values('storage_discharge_grid'),
-#                             'storage_state_of_charge' : optimiser.values('storage_state_of_charge'),
-#                             'net_import' : optimiser.values('local_net_import'),
-#                             'net_export' : optimiser.values('local_net_export'),
-#                             'demand_transfer' : optimiser.values('local_demand_transfer')}
+optimised_battery_values ={ 'storage_charge_grid' : optimiser.values('storage_charge_grid'),
+                            'storage_charge_generation' : optimiser.values('storage_charge_generation'),
+                            'storage_discharge_demand' : optimiser.values('storage_discharge_demand'),
+                            'storage_discharge_grid' : optimiser.values('storage_discharge_grid'),
+                            'storage_state_of_charge' : optimiser.values('storage_state_of_charge'),
+                            'net_import' : optimiser.values('local_net_import'),
+                            'net_export' : optimiser.values('local_net_export'),
+                            'demand_transfer' : optimiser.values('local_demand_transfer')}
 
-# E_cb = optimised_battery_values['storage_charge_grid']
-# E_gb = optimised_battery_values['storage_charge_generation']
-# E_bl = abs(optimised_battery_values['storage_discharge_demand'])
-# E_bc = abs(optimised_battery_values['storage_discharge_grid'])
-# E_cl = abs(optimised_battery_values['net_import'])
-# E_gc = abs(optimised_battery_values['net_export'])
-# E_gl = abs(optimised_battery_values['demand_transfer'])
+E_cb = optimised_battery_values['storage_charge_grid']
+E_gb = optimised_battery_values['storage_charge_generation']
+E_bl = abs(optimised_battery_values['storage_discharge_demand'])
+E_bc = abs(optimised_battery_values['storage_discharge_grid'])
+E_cl = abs(optimised_battery_values['net_import'])
+E_gc = abs(optimised_battery_values['net_export'])
+E_gl = abs(optimised_battery_values['demand_transfer'])
 
-# E_cb_total_kWh = sum(E_cb)/intervals_in_hour
-# E_gb_total_kWh = sum(E_gb)/intervals_in_hour
-# E_bl_total_kWh = sum(E_bl)/intervals_in_hour
-# E_bc_total_kWh = sum(E_bc)/intervals_in_hour
-# E_gc_total_kWh = sum(E_gc)/intervals_in_hour
-# E_cl_total_kWh = sum(E_cl)/intervals_in_hour
-# E_gl_total_kWh = sum(E_gl)/intervals_in_hour
+E_cb_total_kWh = sum(E_cb)/intervals_in_hour
+E_gb_total_kWh = sum(E_gb)/intervals_in_hour
+E_bl_total_kWh = sum(E_bl)/intervals_in_hour
+E_bc_total_kWh = sum(E_bc)/intervals_in_hour
+E_gc_total_kWh = sum(E_gc)/intervals_in_hour
+E_cl_total_kWh = sum(E_cl)/intervals_in_hour
+E_gl_total_kWh = sum(E_gl)/intervals_in_hour
 
-# net_import = E_cl+E_cb
-# net_export = -1*(E_bc+E_gc)
-# PCC_peak_power_import = max(net_import)
-# PCC_peak_power_export = min(net_export)
-# print('Peak power import {:.2f} kW'.format(PCC_peak_power_import))
-# print('Peak power export {:.2f} kW'.format(PCC_peak_power_export))
-# print('Sum peak powers {:.2f} kW'.format(abs(PCC_peak_power_export)+PCC_peak_power_import))
-# PCC_sum_energy_import = sum(net_import)/intervals_in_hour
-# print('Net energy imported {:.2f} kWh'.format((PCC_sum_energy_import)))
-# PCC_sum_energy_export = sum(net_export)/intervals_in_hour
-# print('Net energy exported {:.2f} kWh'.format(PCC_sum_energy_export))
-
-
-# battery_action_carbon = E_cb + E_gb - E_bl - E_bc
-# net_load_battery_carbon = E_cl + E_cb - E_gc - E_bc
-# peak_power_import_battery_carbon = PCC_peak_power_import
-# peak_power_export_battery_carbon = PCC_peak_power_export
-# sum_energy_import_battery_carbon = PCC_sum_energy_import
-# sum_energy_export_battery_carbon = PCC_sum_energy_export
-
-# battery_cycles = (E_cb_total_kWh + E_gb_total_kWh)/battery_capacity_kWh
-# nu_days = len(E_cb)/(12*24)
-# battery_cycles_per_day = battery_cycles/nu_days
-# print('Battery cycles per day {:.2f}'.format((battery_cycles_per_day)))
-
-# self_consumption_carbon = 1 - PCC_sum_energy_export/total_solar_generation
-# print('Self consumption {:.2f}%'.format(100*float(self_consumption_carbon)))
-# self_sufficiency_carbon = float(1 - PCC_sum_energy_import/total_load)
-# print('Self sufficiency {:.2f}%'.format(100*self_sufficiency_carbon))
-
-# # Reset tariffs to make costs consistent with other scenarios
-# re_i_factor = 1 # multiply base tariff values
-# re_e_factor = 1 # set export energy tariffs relative to re import
-# rt_i_factor = 1 # multiply base tariff values
-# rt_e_factor = 1 # set export transport tariffs relative to rt import
-# le_i_factor = 1 # set local import energy tariffs relative to re import
-# le_e_factor = 1 # set local export energy tariffs relative to le import
-# lt_i_factor = 0.5 # set local import transport tariffs relative to rt import
-# lt_e_factor = 0.5 # set local export transport tariffs relative to lt import
-# tariffs = {}
-# tariffs['re_import_tariff'] = spot_price
-# tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
-# tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
-# tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
-# tariffs['le_import_tariff'] = le_i_factor*tariffs['re_import_tariff']
-# tariffs['le_export_tariff'] = le_e_factor*tariffs['le_import_tariff']
-# tariffs['lt_import_tariff'] = lt_i_factor*tariffs['rt_import_tariff']
-# tariffs['lt_export_tariff'] = lt_e_factor*tariffs['lt_import_tariff']
-# apply_tariffs(tariffs)
-
-# customer_cost, battery_cost, network_cost = LEM_financial(tariffs,E_cl, E_cb, E_gc, E_bc, E_bl, E_gb, E_gl)
-# print('Customer cost ${:.2f}'.format(customer_cost))
-# print('Battery cost ${:.2f}'.format(battery_cost))
-# customer_cost_carbon = customer_cost
-# battery_cost_carbon = battery_cost
-# carbon_emissions_carbon = sum(net_load_battery_carbon*carbon_intensity)
-# carbon_savings_carbon = carbon_emissions_no_battery - carbon_emissions_carbon
+net_import = E_cl+E_cb
+net_export = -1*(E_bc+E_gc)
+PCC_peak_power_import = max(net_import)
+PCC_peak_power_export = min(net_export)
+print('Peak power import {:.2f} kW'.format(PCC_peak_power_import))
+print('Peak power export {:.2f} kW'.format(PCC_peak_power_export))
+print('Sum peak powers {:.2f} kW'.format(abs(PCC_peak_power_export)+PCC_peak_power_import))
+PCC_sum_energy_import = sum(net_import)/intervals_in_hour
+print('Net energy imported {:.2f} kWh'.format((PCC_sum_energy_import)))
+PCC_sum_energy_export = sum(net_export)/intervals_in_hour
+print('Net energy exported {:.2f} kWh'.format(PCC_sum_energy_export))
 
 
+battery_action_carbon = E_cb + E_gb - E_bl - E_bc
+net_load_battery_carbon = E_cl + E_cb - E_gc - E_bc
+peak_power_import_battery_carbon = PCC_peak_power_import
+peak_power_export_battery_carbon = PCC_peak_power_export
+sum_energy_import_battery_carbon = PCC_sum_energy_import
+sum_energy_export_battery_carbon = PCC_sum_energy_export
 
-# ##################### Optimise battery charge/discharging #####################
-# print('\n------ Coptimise battery for carbon and profit ------')
+battery_cycles = (E_cb_total_kWh + E_gb_total_kWh)/battery_capacity_kWh
+nu_days = len(E_cb)/(12*24)
+battery_cycles_per_day = battery_cycles/nu_days
+print('Battery cycles per day {:.2f}'.format((battery_cycles_per_day)))
 
-# # Change tariffs to force battery to at all costs preference local supplies
-# carbon_weighting = 0.5 # 0.5 = weighting carbon and spot price equally
-# re_i_factor = 1 # multiply base tariff values
-# re_e_factor = 1 # set export energy tariffs relative to re import
-# rt_i_factor = 1 # multiply base tariff values
-# rt_e_factor = 1 # set export transport tariffs relative to rt import
-# le_i_factor = 1 # zero carbon cost
-# le_e_factor = 1 # earn carbon price at regular grid rates
-# lt_i_factor = 0.5 # set local import transport tariffs relative to rt import
-# lt_e_factor = 0.5 # set local export transport tariffs relative to lt import
-# tariffs = {}
-# tariffs['re_import_tariff'] = carbon_weighting*carbon_price*carbon_intensity + (1-carbon_weighting)*spot_price
-# tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
-# tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
-# tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
-# tariffs['le_import_tariff'] = le_i_factor*tariffs['re_import_tariff']
-# tariffs['le_export_tariff'] = le_e_factor*tariffs['le_import_tariff']
-# tariffs['lt_import_tariff'] = lt_i_factor*tariffs['rt_import_tariff']
-# tariffs['lt_export_tariff'] = lt_e_factor*tariffs['lt_import_tariff']
-# apply_tariffs(tariffs)
+self_consumption_carbon = 1 - PCC_sum_energy_export/total_solar_generation
+print('Self consumption {:.2f}%'.format(100*float(self_consumption_carbon)))
+self_sufficiency_carbon = float(1 - PCC_sum_energy_import/total_load)
+print('Self sufficiency {:.2f}%'.format(100*self_sufficiency_carbon))
 
-# opt_objective = OptimiserObjectiveSet.LocalModelsThirdParty
-# optimiser = LocalEnergyOptimiser(interval_in_minutes, num_intervals, energy_system, opt_objective)
+# Reset tariffs to make costs consistent with other scenarios
+re_i_factor = 1 # multiply base tariff values
+re_e_factor = 1 # set export energy tariffs relative to re import
+rt_i_factor = 1 # multiply base tariff values
+rt_e_factor = 1 # set export transport tariffs relative to rt import
+le_i_factor = 1 # set local import energy tariffs relative to re import
+le_e_factor = 1 # set local export energy tariffs relative to le import
+lt_i_factor = 0.5 # set local import transport tariffs relative to rt import
+lt_e_factor = 0.5 # set local export transport tariffs relative to lt import
+tariffs = {}
+tariffs['re_import_tariff'] = re_i_factor*spot_price
+tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
+tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
+tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
+tariffs['le_import_tariff'] = le_i_factor*tariffs['re_import_tariff']
+tariffs['le_export_tariff'] = le_e_factor*tariffs['le_import_tariff']
+tariffs['lt_import_tariff'] = lt_i_factor*tariffs['rt_import_tariff']
+tariffs['lt_export_tariff'] = lt_e_factor*tariffs['lt_import_tariff']
+apply_tariffs(tariffs)
 
-# optimised_battery_values ={ 'storage_charge_grid' : optimiser.values('storage_charge_grid'),
-#                             'storage_charge_generation' : optimiser.values('storage_charge_generation'),
-#                             'storage_discharge_demand' : optimiser.values('storage_discharge_demand'),
-#                             'storage_discharge_grid' : optimiser.values('storage_discharge_grid'),
-#                             'storage_state_of_charge' : optimiser.values('storage_state_of_charge'),
-#                             'net_import' : optimiser.values('local_net_import'),
-#                             'net_export' : optimiser.values('local_net_export'),
-#                             'demand_transfer' : optimiser.values('local_demand_transfer')}
-
-# E_cb = optimised_battery_values['storage_charge_grid']
-# E_gb = optimised_battery_values['storage_charge_generation']
-# E_bl = abs(optimised_battery_values['storage_discharge_demand'])
-# E_bc = abs(optimised_battery_values['storage_discharge_grid'])
-# E_cl = abs(optimised_battery_values['net_import'])
-# E_gc = abs(optimised_battery_values['net_export'])
-# E_gl = abs(optimised_battery_values['demand_transfer'])
-
-# E_cb_total_kWh = sum(E_cb)/intervals_in_hour
-# E_gb_total_kWh = sum(E_gb)/intervals_in_hour
-# E_bl_total_kWh = sum(E_bl)/intervals_in_hour
-# E_bc_total_kWh = sum(E_bc)/intervals_in_hour
-# E_gc_total_kWh = sum(E_gc)/intervals_in_hour
-# E_cl_total_kWh = sum(E_cl)/intervals_in_hour
-# E_gl_total_kWh = sum(E_gl)/intervals_in_hour
-
-# net_import = E_cl+E_cb
-# net_export = -1*(E_bc+E_gc)
-# PCC_peak_power_import = max(net_import)
-# PCC_peak_power_export = min(net_export)
-# print('Peak power import {:.2f} kW'.format(PCC_peak_power_import))
-# print('Peak power export {:.2f} kW'.format(PCC_peak_power_export))
-# print('Sum peak powers {:.2f} kW'.format(abs(PCC_peak_power_export)+PCC_peak_power_import))
-# PCC_sum_energy_import = sum(net_import)/intervals_in_hour
-# print('Net energy imported {:.2f} kWh'.format((PCC_sum_energy_import)))
-# PCC_sum_energy_export = sum(net_export)/intervals_in_hour
-# print('Net energy exported {:.2f} kWh'.format(PCC_sum_energy_export))
-
-# battery_action_carbon_coopt = E_cb + E_gb - E_bl - E_bc
-# net_load_battery_carbon_coopt = E_cl + E_cb - E_gc - E_bc
-# peak_power_import_battery_carbon_coopt = PCC_peak_power_import
-# peak_power_export_battery_carbon_coopt = PCC_peak_power_export
-# sum_energy_import_battery_carbon_coopt = PCC_sum_energy_import
-# sum_energy_export_battery_carbon_coopt = PCC_sum_energy_export
-
-# battery_cycles = (E_cb_total_kWh + E_gb_total_kWh)/battery_capacity_kWh
-# nu_days = len(E_cb)/(12*24)
-# battery_cycles_per_day = battery_cycles/nu_days
-# print('Battery cycles per day {:.2f}'.format((battery_cycles_per_day)))
-
-# self_consumption_carbon_coopt = 1 - PCC_sum_energy_export/total_solar_generation
-# print('Self consumption {:.2f}%'.format(100*float(self_consumption_carbon_coopt)))
-# self_sufficiency_carbon_coopt = float(1 - PCC_sum_energy_import/total_load)
-# print('Self sufficiency {:.2f}%'.format(100*self_sufficiency_carbon_coopt))
+customer_cost, battery_cost, network_cost = LEM_financial(tariffs,E_cl, E_cb, E_gc, E_bc, E_bl, E_gb, E_gl)
+print('Customer cost ${:.2f}'.format(customer_cost))
+print('Battery cost ${:.2f}'.format(battery_cost))
+customer_cost_carbon = customer_cost
+battery_cost_carbon = battery_cost
+carbon_emissions_carbon = sum(net_load_battery_carbon*carbon_intensity)
+carbon_savings_carbon = carbon_emissions_no_battery - carbon_emissions_carbon
 
 
-# # Reset tariffs to make costs consistent with other scenarios
-# re_i_factor = 1 # multiply base tariff values
-# re_e_factor = 1 # set export energy tariffs relative to re import
-# rt_i_factor = 1 # multiply base tariff values
-# rt_e_factor = 1 # set export transport tariffs relative to rt import
-# le_i_factor = 1 # set local import energy tariffs relative to re import
-# le_e_factor = 1 # set local export energy tariffs relative to le import
-# lt_i_factor = 0.5 # set local import transport tariffs relative to rt import
-# lt_e_factor = 0.5 # set local export transport tariffs relative to lt import
-# tariffs = {}
-# tariffs['re_import_tariff'] = spot_price
-# tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
-# tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
-# tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
-# tariffs['le_import_tariff'] = le_i_factor*tariffs['re_import_tariff']
-# tariffs['le_export_tariff'] = le_e_factor*tariffs['le_import_tariff']
-# tariffs['lt_import_tariff'] = lt_i_factor*tariffs['rt_import_tariff']
-# tariffs['lt_export_tariff'] = lt_e_factor*tariffs['lt_import_tariff']
-# apply_tariffs(tariffs)
 
-# customer_cost, battery_cost, network_cost = LEM_financial(tariffs,E_cl, E_cb, E_gc, E_bc, E_bl, E_gb, E_gl)
-# print('Customer cost ${:.2f}'.format(customer_cost))
-# print('Battery cost ${:.2f}'.format(battery_cost))
-# customer_cost_carbon_coopt = customer_cost
-# battery_cost_carbon_coopt = battery_cost
-# carbon_emissions_carbon_coopt = sum(net_load_battery_carbon_coopt*carbon_intensity)
-# carbon_savings_carbon_coopt = carbon_emissions_no_battery - carbon_emissions_carbon_coopt
+##################### Optimise battery charge/discharging #####################
+print('\n------ Coptimise battery for carbon and profit ------')
+
+# Change tariffs to force battery to at all costs preference local supplies
+carbon_weighting = 0.5 # 0.5 = weighting carbon and spot price equally
+re_i_factor = 1 # multiply base tariff values
+re_e_factor = 1 # set export energy tariffs relative to re import
+rt_i_factor = 1 # multiply base tariff values
+rt_e_factor = 1 # set export transport tariffs relative to rt import
+le_i_factor = 1 # zero carbon cost
+le_e_factor = 1 # earn carbon price at regular grid rates
+lt_i_factor = 0.5 # set local import transport tariffs relative to rt import
+lt_e_factor = 0.5 # set local export transport tariffs relative to lt import
+tariffs = {}
+weighted_price = carbon_weighting*carbon_price*carbon_intensity + (1-carbon_weighting)*spot_price
+tariffs['re_import_tariff'] = re_i_factor*weighted_price
+tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
+tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
+tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
+tariffs['le_import_tariff'] = le_i_factor*tariffs['re_import_tariff']
+tariffs['le_export_tariff'] = le_e_factor*tariffs['le_import_tariff']
+tariffs['lt_import_tariff'] = lt_i_factor*tariffs['rt_import_tariff']
+tariffs['lt_export_tariff'] = lt_e_factor*tariffs['lt_import_tariff']
+apply_tariffs(tariffs)
+
+opt_objective = OptimiserObjectiveSet.LocalModelsThirdParty
+optimiser = LocalEnergyOptimiser(interval_in_minutes, num_intervals, energy_system, opt_objective)
+
+optimised_battery_values ={ 'storage_charge_grid' : optimiser.values('storage_charge_grid'),
+                            'storage_charge_generation' : optimiser.values('storage_charge_generation'),
+                            'storage_discharge_demand' : optimiser.values('storage_discharge_demand'),
+                            'storage_discharge_grid' : optimiser.values('storage_discharge_grid'),
+                            'storage_state_of_charge' : optimiser.values('storage_state_of_charge'),
+                            'net_import' : optimiser.values('local_net_import'),
+                            'net_export' : optimiser.values('local_net_export'),
+                            'demand_transfer' : optimiser.values('local_demand_transfer')}
+
+E_cb = optimised_battery_values['storage_charge_grid']
+E_gb = optimised_battery_values['storage_charge_generation']
+E_bl = abs(optimised_battery_values['storage_discharge_demand'])
+E_bc = abs(optimised_battery_values['storage_discharge_grid'])
+E_cl = abs(optimised_battery_values['net_import'])
+E_gc = abs(optimised_battery_values['net_export'])
+E_gl = abs(optimised_battery_values['demand_transfer'])
+
+E_cb_total_kWh = sum(E_cb)/intervals_in_hour
+E_gb_total_kWh = sum(E_gb)/intervals_in_hour
+E_bl_total_kWh = sum(E_bl)/intervals_in_hour
+E_bc_total_kWh = sum(E_bc)/intervals_in_hour
+E_gc_total_kWh = sum(E_gc)/intervals_in_hour
+E_cl_total_kWh = sum(E_cl)/intervals_in_hour
+E_gl_total_kWh = sum(E_gl)/intervals_in_hour
+
+net_import = E_cl+E_cb
+net_export = -1*(E_bc+E_gc)
+PCC_peak_power_import = max(net_import)
+PCC_peak_power_export = min(net_export)
+print('Peak power import {:.2f} kW'.format(PCC_peak_power_import))
+print('Peak power export {:.2f} kW'.format(PCC_peak_power_export))
+print('Sum peak powers {:.2f} kW'.format(abs(PCC_peak_power_export)+PCC_peak_power_import))
+PCC_sum_energy_import = sum(net_import)/intervals_in_hour
+print('Net energy imported {:.2f} kWh'.format((PCC_sum_energy_import)))
+PCC_sum_energy_export = sum(net_export)/intervals_in_hour
+print('Net energy exported {:.2f} kWh'.format(PCC_sum_energy_export))
+
+battery_action_carbon_coopt = E_cb + E_gb - E_bl - E_bc
+net_load_battery_carbon_coopt = E_cl + E_cb - E_gc - E_bc
+peak_power_import_battery_carbon_coopt = PCC_peak_power_import
+peak_power_export_battery_carbon_coopt = PCC_peak_power_export
+sum_energy_import_battery_carbon_coopt = PCC_sum_energy_import
+sum_energy_export_battery_carbon_coopt = PCC_sum_energy_export
+
+battery_cycles = (E_cb_total_kWh + E_gb_total_kWh)/battery_capacity_kWh
+nu_days = len(E_cb)/(12*24)
+battery_cycles_per_day = battery_cycles/nu_days
+print('Battery cycles per day {:.2f}'.format((battery_cycles_per_day)))
+
+self_consumption_carbon_coopt = 1 - PCC_sum_energy_export/total_solar_generation
+print('Self consumption {:.2f}%'.format(100*float(self_consumption_carbon_coopt)))
+self_sufficiency_carbon_coopt = float(1 - PCC_sum_energy_import/total_load)
+print('Self sufficiency {:.2f}%'.format(100*self_sufficiency_carbon_coopt))
+
+
+# Reset tariffs to make costs consistent with other scenarios
+re_i_factor = 1 # multiply base tariff values
+re_e_factor = 1 # set export energy tariffs relative to re import
+rt_i_factor = 1 # multiply base tariff values
+rt_e_factor = 1 # set export transport tariffs relative to rt import
+le_i_factor = 1 # set local import energy tariffs relative to re import
+le_e_factor = 1 # set local export energy tariffs relative to le import
+lt_i_factor = 0.5 # set local import transport tariffs relative to rt import
+lt_e_factor = 0.5 # set local export transport tariffs relative to lt import
+tariffs = {}
+tariffs['re_import_tariff'] = re_i_factor*spot_price
+tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
+tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
+tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
+tariffs['le_import_tariff'] = le_i_factor*tariffs['re_import_tariff']
+tariffs['le_export_tariff'] = le_e_factor*tariffs['le_import_tariff']
+tariffs['lt_import_tariff'] = lt_i_factor*tariffs['rt_import_tariff']
+tariffs['lt_export_tariff'] = lt_e_factor*tariffs['lt_import_tariff']
+apply_tariffs(tariffs)
+
+customer_cost, battery_cost, network_cost = LEM_financial(tariffs,E_cl, E_cb, E_gc, E_bc, E_bl, E_gb, E_gl)
+print('Customer cost ${:.2f}'.format(customer_cost))
+print('Battery cost ${:.2f}'.format(battery_cost))
+customer_cost_carbon_coopt = customer_cost
+battery_cost_carbon_coopt = battery_cost
+carbon_emissions_carbon_coopt = sum(net_load_battery_carbon_coopt*carbon_intensity)
+carbon_savings_carbon_coopt = carbon_emissions_no_battery - carbon_emissions_carbon_coopt
 
 
 ##################### Optimise battery charge/discharging #####################
 print('\n------ Optimise battery for electrical conditions ------')
 # Change tariffs to force battery to at all costs preference local supplies
-re_i_factor = 1 # multiply base tariff values
-re_e_factor = 1 # set export energy tariffs relative to re import
+re_i_factor = 0 # multiply base tariff values
+re_e_factor = 0 # set export energy tariffs relative to re import
 rt_i_factor = 1e4 # multiply base tariff values
 rt_e_factor = 1e4 # set export transport tariffs relative to rt import
-le_i_factor = 1 # zero carbon cost
-le_e_factor = 1 # earn carbon price at regular grid rates
+le_i_factor = 0 # zero carbon cost
+le_e_factor = 0 # earn carbon price at regular grid rates
 lt_i_factor = 0 # set local import transport tariffs relative to rt import
 lt_e_factor = 0 # set local export transport tariffs relative to lt import
 tariffs = {}
-tariffs['re_import_tariff'] = spot_price
+tariffs['re_import_tariff'] = re_i_factor*spot_price
 tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
 tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
 tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
@@ -712,7 +713,7 @@ le_e_factor = 1 # set local export energy tariffs relative to le import
 lt_i_factor = 0.5 # set local import transport tariffs relative to rt import
 lt_e_factor = 0.5 # set local export transport tariffs relative to lt import
 tariffs = {}
-tariffs['re_import_tariff'] = spot_price
+tariffs['re_import_tariff'] = re_i_factor*spot_price
 tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
 tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
 tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
@@ -814,7 +815,7 @@ le_e_factor = 1 # set local export energy tariffs relative to le import
 lt_i_factor = 0.5 # set local import transport tariffs relative to rt import
 lt_e_factor = 0.5 # set local export transport tariffs relative to lt import
 tariffs = {}
-tariffs['re_import_tariff'] = spot_price
+tariffs['re_import_tariff'] = re_i_factor*spot_price
 tariffs['re_export_tariff'] = re_e_factor*tariffs['re_import_tariff']
 tariffs['rt_import_tariff'] = rt_i_factor*base_network_charges
 tariffs['rt_export_tariff'] = rt_e_factor*tariffs['rt_import_tariff']
@@ -1054,17 +1055,16 @@ plt.savefig('battery-{0}kW_c{1}-{2}-self-sufficiency'.format(battery_capacity_kW
 models = ['Battery-profit', 'Communal-savings', 
  'Carbon-savings', 'Co-optimised', 'Self-sufficiency', 'Timer']
 
-batt_revenues = np.array([battery_cost_profit, battery_cost_communal, battery_cost_sufficiency,
- battery_cost_carbon, battery_cost_carbon_coopt, battery_cost_ToU])
-cust_costs = np.array([customer_cost_profit, customer_cost_communal, customer_cost_sufficiency,
- customer_cost_carbon, customer_cost_carbon_coopt, customer_cost_ToU])
-sufficiencies = np.array([float(self_sufficiency_profit), float(self_sufficiency_communal), float(self_sufficiency_sufficiency),
- float(self_sufficiency_carbon), float(self_sufficiency_carbon_coopt), float(self_sufficiency_ToU)])
-carbon = np.array([carbon_savings_profit, carbon_savings_communal, carbon_savings_sufficiency,
- carbon_savings_carbon, carbon_savings_carbon_coopt, carbon_savings_ToU])
-transparancy = np.array([0, 1, 2, 2, 1, 9])
-trust = np.array([0, 5, 5, 5, 2, 9])
-simplicity = np.array([1, 1, 2, 1, 0, 4])
+batt_revenues = np.array([battery_cost_profit, battery_cost_communal,
+ battery_cost_carbon, battery_cost_carbon_coopt, battery_cost_sufficiency, battery_cost_ToU])
+cust_costs = np.array([customer_cost_profit, customer_cost_communal,
+ customer_cost_carbon, customer_cost_carbon_coopt, customer_cost_sufficiency, customer_cost_ToU])
+sufficiencies = np.array([float(self_sufficiency_profit), float(self_sufficiency_communal),
+ float(self_sufficiency_carbon), float(self_sufficiency_carbon_coopt), 
+ float(self_sufficiency_sufficiency), float(self_sufficiency_ToU)])
+carbon = np.array([carbon_savings_profit, carbon_savings_communal,
+ carbon_savings_carbon, carbon_savings_carbon_coopt, carbon_savings_sufficiency, carbon_savings_ToU])
+simplicity = np.array([1, 1, 1, 0, 2, 4])
 
 # Set data
 df = pd.DataFrame({
